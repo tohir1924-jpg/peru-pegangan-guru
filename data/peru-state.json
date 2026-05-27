@@ -1,0 +1,157 @@
+{
+  "settings": {
+    "teacherName": "Moh. Tohir",
+    "schoolName": "MTsN 2 Barito Timur",
+    "mainSubject": "Matematika",
+    "activeAcademicYear": "2025/2026",
+    "activeSemester": "Genap"
+  },
+  "classes": [
+    {
+      "id": "class-7a",
+      "name": "VII A",
+      "academicYear": "2025/2026",
+      "subject": "Matematika",
+      "description": "Kelas contoh",
+      "createdAt": "2026-05-25T00:00:00.000Z"
+    },
+    {
+      "id": "class-8a",
+      "name": "VIII A",
+      "academicYear": "2025/2026",
+      "subject": "Matematika",
+      "description": "",
+      "createdAt": "2026-05-25T00:00:00.000Z"
+    }
+  ],
+  "students": [
+    {
+      "id": "stu-1",
+      "classId": "class-7a",
+      "name": "Ahmad Fauzi",
+      "nis": "12345",
+      "gender": "L",
+      "parentPhone": "",
+      "notes": "",
+      "createdAt": "2026-05-25T00:00:00.000Z"
+    },
+    {
+      "id": "stu-2",
+      "classId": "class-7a",
+      "name": "Siti Rahmah",
+      "nis": "12346",
+      "gender": "P",
+      "parentPhone": "",
+      "notes": "Perlu penguatan latihan",
+      "createdAt": "2026-05-25T00:00:00.000Z"
+    },
+    {
+      "id": "stu-3",
+      "classId": "class-8a",
+      "name": "Rizky Ananda",
+      "nis": "",
+      "gender": "L",
+      "parentPhone": "",
+      "notes": "",
+      "createdAt": "2026-05-25T00:00:00.000Z"
+    }
+  ],
+  "attendanceSessions": [
+    {
+      "id": "att-1779713185636-3f6427",
+      "classId": "class-7a",
+      "date": "2026-05-25",
+      "notes": "",
+      "createdAt": "2026-05-25T12:46:25.636Z"
+    },
+    {
+      "id": "att-1779805794456-734db8",
+      "classId": "class-7a",
+      "date": "2026-05-26",
+      "notes": "",
+      "createdAt": "2026-05-26T14:29:54.456Z"
+    }
+  ],
+  "attendanceRecords": [
+    {
+      "id": "attrec-1779713185637-eea1c4",
+      "sessionId": "att-1779713185636-3f6427",
+      "studentId": "stu-1",
+      "status": "Hadir",
+      "notes": ""
+    },
+    {
+      "id": "attrec-1779713185637-5d52ca",
+      "sessionId": "att-1779713185636-3f6427",
+      "studentId": "stu-2",
+      "status": "Hadir",
+      "notes": ""
+    },
+    {
+      "id": "attrec-1779805794456-76d6dc",
+      "sessionId": "att-1779805794456-734db8",
+      "studentId": "stu-1",
+      "status": "Hadir",
+      "notes": ""
+    },
+    {
+      "id": "attrec-1779805794456-1edc2f",
+      "sessionId": "att-1779805794456-734db8",
+      "studentId": "stu-2",
+      "status": "Izin",
+      "notes": ""
+    }
+  ],
+  "assessments": [],
+  "assessmentScores": [],
+  "journals": [],
+  "schedules": [
+    {
+      "id": "sch-1779805669303-48a3ae",
+      "day": "Selasa",
+      "classId": "class-7a",
+      "subject": "Matematika",
+      "room": "",
+      "status": "Terjadwal",
+      "notes": "",
+      "startTime": "07.00",
+      "endTime": "08.00",
+      "createdAt": "2026-05-26T14:27:49.303Z"
+    },
+    {
+      "id": "sch-1779805703805-dd907a",
+      "day": "Selasa",
+      "classId": "class-7a",
+      "subject": "Matematika",
+      "room": "",
+      "status": "Terjadwal",
+      "notes": "",
+      "startTime": "09.30",
+      "endTime": "08.00",
+      "createdAt": "2026-05-26T14:28:23.805Z"
+    }
+  ],
+  "activityLogs": [
+    {
+      "id": "log-1779805794456-117e2f",
+      "type": "check",
+      "title": "Absensi VII A disimpan",
+      "desc": "2026-05-26",
+      "createdAt": "2026-05-26T14:29:54.456Z"
+    },
+    {
+      "id": "log-1779805703805-c10cbf",
+      "type": "calendar",
+      "title": "Jadwal Matematika disimpan",
+      "desc": "Setiap Selasa - VII A",
+      "createdAt": "2026-05-26T14:28:23.805Z"
+    },
+    {
+      "id": "log-1779805669304-c9d629",
+      "type": "calendar",
+      "title": "Jadwal Matematika disimpan",
+      "desc": "Setiap Selasa - VII A",
+      "createdAt": "2026-05-26T14:27:49.304Z"
+    }
+  ]
+}

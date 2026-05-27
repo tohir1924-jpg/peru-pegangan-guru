@@ -1,0 +1,10 @@
+{
+  "name": "Peru - Pegangan Guru",
+  "short_name": "Peru",
+  "description": "Aplikasi pribadi guru untuk absensi, nilai, jurnal, dan rekap.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f7faf6",
+  "theme_color": "#2f7d57",
+  "icons": []
+}
