@@ -709,9 +709,10 @@ function renderDashboard() {
     </section>
     <div class="card card-pad section-gap">
       <div class="section-title"><div><span class="soft-label">Aksi Cepat</span><h2>Mulai pekerjaan kelas</h2></div></div>
-      <div class="quick-grid">
-        ${getVisibleQuickActions().map(([target, icon, title, desc]) => quick(icon, title, desc, target)).join("") || emptyState("settings", "Aksi cepat belum dipilih", "Atur tombol aksi cepat yang ingin ditampilkan di halaman Pengaturan.")}
-      </div>
+      ${(() => {
+        const actions = getVisibleQuickActions();
+        return actions.length ? `<div class="quick-grid" style="grid-template-columns: repeat(${actions.length}, minmax(0, 1fr));">${actions.map(([target, icon, title, desc]) => quick(icon, title, desc, target)).join("")}</div>` : emptyState("settings", "Aksi cepat belum dipilih", "Atur tombol aksi cepat yang ingin ditampilkan di halaman Pengaturan.");
+      })()}
     </div>
     <div class="grid dashboard-grid">
       <div class="card card-pad">
