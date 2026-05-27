@@ -2,5 +2,8 @@ server.*.log
 dist/
 node_modules/
 .wrangler/
+.wrangler-functions-check/
+data/pegu-teachers.json
+data/teacher-states/
 .DS_Store
 Thumbs.db

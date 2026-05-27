@@ -42,11 +42,14 @@ PUT  http://127.0.0.1:5174/api/state
 POST http://127.0.0.1:5174/api/reset
 ```
 
-Data backend disimpan di:
+Data backend lokal multi-user disimpan di:
 
 ```text
-data/peru-state.json
+data/pegu-teachers.json
+data/teacher-states/<teacher_id>.json
 ```
+
+Backend online menggunakan Cloudflare Pages Functions + D1 dengan binding `DB`.
 
 File utama:
 

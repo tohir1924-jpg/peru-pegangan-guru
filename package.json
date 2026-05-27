@@ -1,7 +1,8 @@
 {
   "name": "pegu",
   "scripts": {
-    "deploy:cloudflare": "wrangler pages deploy dist --project-name pegu"
+    "build:dist": "node scripts/build-dist.cjs",
+    "deploy:cloudflare": "npm run build:dist && wrangler pages deploy dist --project-name pegu"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

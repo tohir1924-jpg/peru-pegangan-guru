@@ -1,5 +1,7 @@
 const STORAGE_KEY = "peru_app_state_v1";
 const API_STATE_URL = "/api/state";
+const API_AUTH_URL = "/api/auth";
+const AUTH_KEY = "pegu_teacher_session_v1";
 
 const navItems = [
   ["dashboard", "home", "Beranda"],
@@ -54,13 +56,29 @@ const seedState = {
   activityLogs: []
 };
 
+let currentTeacher = loadTeacherSession();
 let state = loadState();
 let route = location.hash.replace("#", "") || "dashboard";
 let backendAvailable = false;
 let saveTimer = null;
 
+function loadTeacherSession() {
+  const raw = localStorage.getItem(AUTH_KEY);
+  if (!raw) return null;
+  try {
+    const session = JSON.parse(raw);
+    return session?.token && session?.teacher ? session : null;
+  } catch {
+    return null;
+  }
+}
+
+function teacherStorageKey() {
+  return currentTeacher?.teacher?.id ? `${STORAGE_KEY}_${currentTeacher.teacher.id}` : STORAGE_KEY;
+}
+
 function loadState() {
-  const raw = localStorage.getItem(STORAGE_KEY);
+  const raw = localStorage.getItem(teacherStorageKey());
   if (!raw) return structuredClone(seedState);
   try {
     return hydrateState(JSON.parse(raw));
@@ -89,37 +107,46 @@ function hydrateState(value) {
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(teacherStorageKey(), JSON.stringify(state));
   syncStateToBackend();
 }
 
 async function loadBackendState() {
+  if (!currentTeacher?.token) return false;
   try {
-    const response = await fetch(API_STATE_URL, { headers: { Accept: "application/json" } });
+    const response = await fetch(API_STATE_URL, { headers: authHeaders({ Accept: "application/json" }) });
+    if (response.status === 401) {
+      clearTeacherSession();
+      return false;
+    }
     if (!response.ok) throw new Error("Backend tidak merespons.");
     const payload = await response.json();
     backendAvailable = true;
     if (payload.state) {
       state = hydrateState(payload.state);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(teacherStorageKey(), JSON.stringify(state));
     } else {
       syncStateToBackend(true);
     }
+    return true;
   } catch {
     backendAvailable = false;
+    return false;
   }
 }
 
 function syncStateToBackend(immediate = false) {
+  if (!currentTeacher?.token) return;
   if (!backendAvailable && !immediate) return;
   window.clearTimeout(saveTimer);
   const send = async () => {
     try {
       const response = await fetch(API_STATE_URL, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(state)
       });
+      if (response.status === 401) clearTeacherSession();
       backendAvailable = response.ok;
     } catch {
       backendAvailable = false;
@@ -129,14 +156,33 @@ function syncStateToBackend(immediate = false) {
   else saveTimer = window.setTimeout(send, 250);
 }
 
+function authHeaders(headers = {}) {
+  return currentTeacher?.token ? { ...headers, Authorization: `Bearer ${currentTeacher.token}` } : headers;
+}
+
+function clearTeacherSession() {
+  localStorage.removeItem(AUTH_KEY);
+  currentTeacher = null;
+  backendAvailable = false;
+}
+
 function setRoute(next) {
   if (next === "logout") {
-    toast("Pegu saat ini berjalan lokal. Tidak ada sesi login yang perlu ditutup.");
+    logoutTeacher();
     return;
   }
   route = next;
   location.hash = next;
   render();
+}
+
+async function logoutTeacher() {
+  if (currentTeacher?.token) {
+    fetch(API_AUTH_URL, { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ action: "logout" }) }).catch(() => {});
+  }
+  clearTeacherSession();
+  state = structuredClone(seedState);
+  renderLogin();
 }
 
 window.addEventListener("hashchange", () => {
@@ -251,7 +297,71 @@ function parseCsv(text) {
   });
 }
 
+function renderLogin(message = "") {
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    <main class="auth-shell">
+      <section class="auth-panel">
+        <div class="auth-brand">
+          <span class="brand-mark">P</span>
+          <div>
+            <h1>Pegu</h1>
+            <p>Pagangan Guru</p>
+          </div>
+        </div>
+        <form id="auth-form" class="auth-form">
+          <label>Nama guru<input class="input" name="teacherName" value="${escapeHtml(currentTeacher?.teacher?.teacherName || "")}" required autocomplete="name"></label>
+          <label>Nama sekolah<input class="input" name="schoolName" value="${escapeHtml(currentTeacher?.teacher?.schoolName || "")}" autocomplete="organization"></label>
+          <label>PIN<input class="input" name="pin" type="password" inputmode="numeric" minlength="4" required autocomplete="current-password"></label>
+          <div class="auth-actions">
+            <button class="btn primary" type="submit" data-auth-action="login">Masuk</button>
+            <button class="btn outline" type="submit" data-auth-action="register">Daftar Guru</button>
+          </div>
+          <p class="form-hint">Data kelas, siswa, absensi, nilai, dan jurnal akan dipisahkan untuk setiap guru.</p>
+          ${message ? `<div class="auth-message">${escapeHtml(message)}</div>` : ""}
+        </form>
+      </section>
+    </main>
+  `;
+  document.querySelector("#auth-form").addEventListener("submit", submitAuth);
+}
+
+async function submitAuth(event) {
+  event.preventDefault();
+  const action = event.submitter?.dataset.authAction || "login";
+  const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+  try {
+    const response = await fetch(API_AUTH_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...data })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.ok) throw new Error(payload.error || "Login gagal.");
+    currentTeacher = { token: payload.token, teacher: payload.teacher };
+    localStorage.setItem(AUTH_KEY, JSON.stringify(currentTeacher));
+    state = hydrateState(payload.state || {
+      ...structuredClone(seedState),
+      settings: {
+        ...seedState.settings,
+        teacherName: payload.teacher.teacherName,
+        schoolName: payload.teacher.schoolName || seedState.settings.schoolName
+      }
+    });
+    localStorage.setItem(teacherStorageKey(), JSON.stringify(state));
+    backendAvailable = true;
+    if (!payload.state) syncStateToBackend(true);
+    render();
+  } catch (error) {
+    renderLogin(error.message || "Login gagal.");
+  }
+}
+
 function render() {
+  if (!currentTeacher?.token) {
+    renderLogin();
+    return;
+  }
   const active = navItems.some(([id]) => id === route && id !== "logout") ? route : "dashboard";
   const app = document.getElementById("app");
   const mobileItems = navItems.filter(([id]) => mobileNavIds.includes(id));
