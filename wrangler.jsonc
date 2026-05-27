@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "pegu",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-05-27",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pegu-state",
+      "database_id": "c2fe7d18-79fb-4289-be25-4ffac0860eb6"
+    }
+  ]
+}
