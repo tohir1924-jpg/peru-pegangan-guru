@@ -32,6 +32,26 @@ const uid = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(16).sl
 const dayName = (date = new Date()) => weekDays[(date.getDay() + 6) % 7];
 const formatWibTime = (value = "") => String(value || "").trim().replace(":", ".");
 const pad2 = (value) => String(value).padStart(2, "0");
+const formatDateId = (value = "") => {
+  const text = String(value || "").trim();
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return text;
+  return `${match[3]}/${match[2]}/${match[1]}`;
+};
+const parseDateId = (value = "") => {
+  const text = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const match = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (!match) return "";
+  const day = pad2(match[1]);
+  const month = pad2(match[2]);
+  const year = match[3];
+  const date = new Date(`${year}-${month}-${day}T00:00:00`);
+  if (Number.isNaN(date.getTime()) || pad2(date.getDate()) !== day || pad2(date.getMonth() + 1) !== month || String(date.getFullYear()) !== year) return "";
+  return `${year}-${month}-${day}`;
+};
+const dateInput = (attrs, value) => `<input class="input" type="text" ${attrs} value="${escapeHtml(formatDateId(value))}" inputmode="numeric" placeholder="hh/bb/tttt" pattern="\\d{2}/\\d{2}/\\d{4}" data-date-input>`;
+const formatDateText = (value = "") => String(value || "").replace(/\b\d{4}-\d{2}-\d{2}\b/g, (match) => formatDateId(match));
 const timeToMinutes = (value = "") => {
   const [hour = "0", minute = "0"] = formatWibTime(value).split(".");
   return Number(hour) * 60 + Number(minute);
@@ -53,9 +73,9 @@ const seedState = {
     { id: "class-8a", name: "VIII A", academicYear: "2025/2026", subject: "Matematika", description: "", createdAt: "2026-05-25T00:00:00.000Z" }
   ],
   students: [
-    { id: "stu-1", classId: "class-7a", name: "Ahmad Fauzi", nis: "12345", gender: "L", parentPhone: "", notes: "", createdAt: "2026-05-25T00:00:00.000Z" },
-    { id: "stu-2", classId: "class-7a", name: "Siti Rahmah", nis: "12346", gender: "P", parentPhone: "", notes: "Perlu penguatan latihan", createdAt: "2026-05-25T00:00:00.000Z" },
-    { id: "stu-3", classId: "class-8a", name: "Rizky Ananda", nis: "22311", gender: "L", parentPhone: "", notes: "", createdAt: "2026-05-25T00:00:00.000Z" }
+    { id: "stu-1", classId: "class-7a", name: "Ahmad Fauzi", gender: "L", parentPhone: "", notes: "", createdAt: "2026-05-25T00:00:00.000Z" },
+    { id: "stu-2", classId: "class-7a", name: "Siti Rahmah", gender: "P", parentPhone: "", notes: "Perlu penguatan latihan", createdAt: "2026-05-25T00:00:00.000Z" },
+    { id: "stu-3", classId: "class-8a", name: "Rizky Ananda", gender: "L", parentPhone: "", notes: "", createdAt: "2026-05-25T00:00:00.000Z" }
   ],
   attendanceSessions: [],
   attendanceRecords: [],
@@ -686,7 +706,7 @@ function formatActivityTime(value) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  return `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
 function renderDashboard() {
@@ -704,7 +724,7 @@ function renderDashboard() {
       </div>
       <div class="hero-date">
         <span>Hari ini</span>
-        <strong>${today()}</strong>
+        <strong>${formatDateId(today())}</strong>
       </div>
     </section>
     <div class="card card-pad section-gap">
@@ -731,7 +751,7 @@ function renderDashboard() {
     <div class="card card-pad activity-wide">
       <div class="section-title"><div><span class="soft-label">Aktivitas Terbaru</span><h2>Riwayat singkat</h2></div></div>
       <div class="list">
-        ${activities.length ? activities.map((activity) => activityItem(activity.type, activity.title, activity.desc, formatActivityTime(activity.createdAt))).join("") : emptyState("bell", "Belum ada aktivitas terbaru", "Aktivitas akan muncul setelah menyimpan absensi, nilai, jurnal, atau jadwal.")}
+        ${activities.length ? activities.map((activity) => activityItem(activity.type, activity.title, formatDateText(activity.desc), formatActivityTime(activity.createdAt))).join("") : emptyState("bell", "Belum ada aktivitas terbaru", "Aktivitas akan muncul setelah menyimpan absensi, nilai, jurnal, atau jadwal.")}
       </div>
     </div>
   `;
@@ -898,22 +918,19 @@ function studentTable(students) {
           </div>
           <h3>${escapeHtml(student.name)}</h3>
           <p>${escapeHtml(student.notes || "Tidak ada catatan khusus")}</p>
-          <div class="data-meta">
-            <span>NIS ${escapeHtml(student.nis || "-")}</span>
-            <span>${escapeHtml(student.gender || "-")}</span>
-          </div>
+          <div class="data-meta"><span>${escapeHtml(student.gender || "-")}</span><span>${escapeHtml(student.parentPhone || "HP orang tua -")}</span></div>
           <div class="row-actions"><button class="btn small outline" data-edit-student="${student.id}">Edit</button><button class="btn small danger" data-delete-student="${student.id}">Hapus</button></div>
         </article>
       `).join("")}
     </div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Nama</th><th>NIS</th><th>JK</th><th>Kelas</th><th>Catatan</th><th>Aksi</th></tr></thead>
+      <thead><tr><th>Nama</th><th>JK</th><th>Kelas</th><th>HP orang tua</th><th>Catatan</th><th>Aksi</th></tr></thead>
       <tbody>${students.map((student) => `
         <tr>
           <td><div class="student-cell"><span class="student-photo tiny">${student.photoData ? `<img src="${student.photoData}" alt="Foto ${escapeHtml(student.name)}">` : photoPlaceholder(student.name)}</span><strong>${escapeHtml(student.name)}</strong></div></td>
-          <td>${escapeHtml(student.nis || "-")}</td>
           <td>${escapeHtml(student.gender || "-")}</td>
           <td>${escapeHtml(className(student.classId))}</td>
+          <td>${escapeHtml(student.parentPhone || "-")}</td>
           <td>${escapeHtml(student.notes || "-")}</td>
           <td><div class="row-actions"><button class="btn small outline" data-edit-student="${student.id}">Edit</button><button class="btn small danger" data-delete-student="${student.id}">Hapus</button></div></td>
         </tr>`).join("")}</tbody>
@@ -933,7 +950,7 @@ function renderAttendance() {
     <div class="card card-pad">
       <div class="toolbar">
         ${classSelect("attendance-class", selectedClass)}
-        <input class="input" type="date" id="attendance-date" value="${selectedDate}">
+        ${dateInput('id="attendance-date"', selectedDate)}
         <button class="btn outline" id="mark-all-present">Set semua Hadir</button>
       </div>
       <div class="form-hint">${scheduleDefault ? `Otomatis mengikuti jadwal hari ini: ${escapeHtml(className(scheduleDefault.classId))} ${escapeHtml(scheduleDefault.startTime || "")}. Kelas dan tanggal tetap bisa diganti manual.` : "Belum ada jadwal hari ini. Pilih kelas dan tanggal secara manual."}</div>
@@ -957,7 +974,7 @@ function renderAttendance() {
 function studentStatusRow(student, status, notes) {
   return `
     <div class="student-input-row" data-attendance-student="${student.id}">
-      <div><div class="student-name">${escapeHtml(student.name)}</div><div class="student-sub">${escapeHtml(student.nis || className(student.classId))}</div></div>
+      <div><div class="student-name">${escapeHtml(student.name)}</div><div class="student-sub">${escapeHtml(className(student.classId))}</div></div>
       <select class="select attendance-status">
         ${["Hadir", "Sakit", "Izin", "Alpha", "Terlambat"].map((item) => `<option ${status === item ? "selected" : ""}>${item}</option>`).join("")}
       </select>
@@ -976,7 +993,7 @@ function historyAttendance(classId) {
         const count = (status) => records.filter((record) => record.status === status).length;
         return `
           <article class="data-card">
-            <div class="data-card-head"><span class="data-icon">${iconSvg("check")}</span><span class="badge">${session.date}</span></div>
+            <div class="data-card-head"><span class="data-icon">${iconSvg("check")}</span><span class="badge">${formatDateId(session.date)}</span></div>
             <h3>${className(session.classId)}</h3>
             <div class="status-grid">
               <span>Hadir <strong>${count("Hadir")}</strong></span>
@@ -993,7 +1010,7 @@ function historyAttendance(classId) {
       <tbody>${sessions.map((session) => {
         const records = state.attendanceRecords.filter((record) => record.sessionId === session.id);
         const count = (status) => records.filter((record) => record.status === status).length;
-        return `<tr><td>${session.date}</td><td>${className(session.classId)}</td><td>${count("Hadir")}</td><td>${count("Sakit")}</td><td>${count("Izin")}</td><td>${count("Alpha")}</td><td>${count("Terlambat")}</td></tr>`;
+        return `<tr><td>${formatDateId(session.date)}</td><td>${className(session.classId)}</td><td>${count("Hadir")}</td><td>${count("Sakit")}</td><td>${count("Izin")}</td><td>${count("Alpha")}</td><td>${count("Terlambat")}</td></tr>`;
       }).join("")}</tbody>
     </table></div>
   `;
@@ -1029,7 +1046,7 @@ function assessmentCard(item) {
     <article class="data-card">
       <div class="data-card-head"><span class="data-icon">${iconSvg("score")}</span><span class="badge warn">Rata-rata ${average}</span></div>
       <h3>${escapeHtml(item.title)}</h3>
-      <p>${escapeHtml(item.category)} - ${escapeHtml(item.date)}</p>
+      <p>${escapeHtml(item.category)} - ${escapeHtml(formatDateId(item.date))}</p>
       <div class="data-meta"><span>${className(item.classId)}</span><span>${scores.length} nilai</span></div>
       <div class="row-actions"><button class="btn small outline" data-edit-assessment="${item.id}">Isi/Edit</button><button class="btn small danger" data-delete-assessment="${item.id}">Hapus</button></div>
     </article>
@@ -1041,7 +1058,7 @@ function assessmentRow(item) {
   const average = scores.length ? Math.round(scores.reduce((sum, score) => sum + Number(score.score), 0) / scores.length) : "-";
   return `
     <tr>
-      <td><strong>${escapeHtml(item.title)}</strong></td><td>${className(item.classId)}</td><td>${item.category}</td><td>${item.date}</td><td><span class="badge">${average}</span></td>
+      <td><strong>${escapeHtml(item.title)}</strong></td><td>${className(item.classId)}</td><td>${item.category}</td><td>${formatDateId(item.date)}</td><td><span class="badge">${average}</span></td>
       <td><div class="row-actions"><button class="btn small outline" data-edit-assessment="${item.id}">Isi/Edit</button><button class="btn small danger" data-delete-assessment="${item.id}">Hapus</button></div></td>
     </tr>
   `;
@@ -1067,7 +1084,7 @@ function renderJournals() {
       ${journals.length ? `
         <div class="list">${journals.map((journal) => `
           <div class="list-item">
-            <div class="section-title compact"><strong>${escapeHtml(journal.material)}</strong><span class="badge">${journal.date}</span></div>
+            <div class="section-title compact"><strong>${escapeHtml(journal.material)}</strong><span class="badge">${formatDateId(journal.date)}</span></div>
             <div class="list-meta">${className(journal.classId)} - ${escapeHtml(journal.subject)} - ${escapeHtml(journal.lessonHours || "-")}</div>
             <div class="journal-preview">${escapeHtml(journal.activities)}</div>
             <div class="row-actions action-row"><button class="btn small outline" data-edit-journal="${journal.id}">Edit</button><button class="btn small danger" data-delete-journal="${journal.id}">Hapus</button></div>
@@ -1202,7 +1219,7 @@ function recapVisualStats(type, classId) {
 function recapTable(type, classId, studentId = "") {
   if (type === "journal") {
     const rows = state.journals.filter((journal) => !classId || journal.classId === classId);
-    return rows.length ? tableFromRows(rows.map((journal) => ({ tanggal: journal.date, kelas: className(journal.classId), materi: journal.material, kegiatan: journal.activities }))) : `<div class="empty">Belum ada jurnal untuk direkap.</div>`;
+    return rows.length ? tableFromRows(rows.map((journal) => ({ tanggal: formatDateId(journal.date), kelas: className(journal.classId), materi: journal.material, kegiatan: journal.activities }))) : `<div class="empty">Belum ada jurnal untuk direkap.</div>`;
   }
   if (type.startsWith("score")) {
     const targetStudent = studentId || studentsInClass(classId)[0]?.id || "";
@@ -1466,7 +1483,6 @@ function studentModal(item = null) {
       </div>
       <label>Nama siswa<input class="input" name="name" value="${escapeHtml(item?.name || "")}" required></label>
       <label>Kelas${classSelect("class-field", item?.classId || state.classes[0]?.id || "")}</label>
-      <label>NIS/NISN<input class="input" name="nis" value="${escapeHtml(item?.nis || "")}"></label>
       <label>Jenis kelamin<select class="select" name="gender"><option value="">-</option><option ${item?.gender === "L" ? "selected" : ""}>L</option><option ${item?.gender === "P" ? "selected" : ""}>P</option></select></label>
       <label>Nomor HP orang tua<input class="input" name="parentPhone" value="${escapeHtml(item?.parentPhone || "")}"></label>
       <label class="full">Catatan khusus<textarea class="textarea" name="notes">${escapeHtml(item?.notes || "")}</textarea></label>
@@ -1490,7 +1506,7 @@ function importStudents(event) {
         klass = { id: uid("class"), name: row.kelas, academicYear: state.settings.activeAcademicYear, subject: state.settings.mainSubject, description: "Dari import siswa", createdAt: new Date().toISOString() };
         state.classes.push(klass);
       }
-      if (row.nama && klass) state.students.push({ id: uid("student"), classId: klass.id, name: row.nama, nis: row.nis || "", gender: row.jenis_kelamin || "", parentPhone: "", notes: row.catatan || "", createdAt: new Date().toISOString() });
+      if (row.nama && klass) state.students.push({ id: uid("student"), classId: klass.id, name: row.nama, gender: row.jenis_kelamin || "", parentPhone: row.hp_orang_tua || "", notes: row.catatan || "", createdAt: new Date().toISOString() });
     });
     saveState(); render(); toast("Import siswa selesai");
   };
@@ -1498,19 +1514,25 @@ function importStudents(event) {
 }
 
 function exportStudents() {
-  downloadFile("peru-siswa.csv", toCsv(state.students.map((s) => ({ nama: s.name, nis: s.nis, jenis_kelamin: s.gender, kelas: className(s.classId), catatan: s.notes }))), "text/csv");
+  downloadFile("peru-siswa.csv", toCsv(state.students.map((s) => ({ nama: s.name, jenis_kelamin: s.gender, kelas: className(s.classId), hp_orang_tua: s.parentPhone, catatan: s.notes }))), "text/csv");
 }
 
 function downloadStudentTemplate() {
   downloadFile("template-import-siswa-peru.csv", toCsv([
-    { nama: "Ahmad Fauzan", nis: "12345", jenis_kelamin: "L", kelas: "VII A", catatan: "Opsional" },
-    { nama: "Siti Aminah", nis: "12346", jenis_kelamin: "P", kelas: "VII A", catatan: "" }
+    { nama: "Ahmad Fauzan", jenis_kelamin: "L", kelas: "VII A", hp_orang_tua: "081234567890", catatan: "Opsional" },
+    { nama: "Siti Aminah", jenis_kelamin: "P", kelas: "VII A", hp_orang_tua: "", catatan: "" }
   ]), "text/csv");
 }
 
 function bindAttendance() {
   document.querySelector("#attendance-class")?.addEventListener("change", (e) => { sessionStorage.setItem("peru_attendance_class", e.target.value); render(); });
-  document.querySelector("#attendance-date")?.addEventListener("change", (e) => { sessionStorage.setItem("peru_attendance_date", e.target.value); render(); });
+  document.querySelector("#attendance-date")?.addEventListener("change", (e) => {
+    const date = parseDateId(e.target.value);
+    if (date) {
+      sessionStorage.setItem("peru_attendance_date", date);
+      render();
+    }
+  });
   document.querySelector("#mark-all-present")?.addEventListener("click", () => document.querySelectorAll(".attendance-status").forEach((select) => { select.value = "Hadir"; }));
   document.querySelector("#goto-students")?.addEventListener("click", () => setRoute("students"));
   document.querySelector("#save-attendance")?.addEventListener("click", saveAttendance);
@@ -1519,8 +1541,8 @@ function bindAttendance() {
 
 function saveAttendance() {
   const classId = document.querySelector("#attendance-class").value;
-  const date = document.querySelector("#attendance-date").value;
-  if (!classId || !date) return alert("Kelas dan tanggal wajib diisi.");
+  const date = parseDateId(document.querySelector("#attendance-date").value);
+  if (!classId || !date) return alert("Kelas dan tanggal wajib diisi dengan format hh/bb/tttt.");
   let session = state.attendanceSessions.find((item) => item.classId === classId && item.date === date);
   if (!session) {
     session = { id: uid("att"), classId, date, notes: "", createdAt: new Date().toISOString() };
@@ -1530,7 +1552,7 @@ function saveAttendance() {
   document.querySelectorAll("[data-attendance-student]").forEach((row) => {
     state.attendanceRecords.push({ id: uid("attrec"), sessionId: session.id, studentId: row.dataset.attendanceStudent, status: row.querySelector(".attendance-status").value, notes: row.querySelector(".attendance-notes").value });
   });
-  logActivity("check", `Absensi ${className(classId)} disimpan`, date);
+  logActivity("check", `Absensi ${className(classId)} disimpan`, formatDateId(date));
   saveState(); render(); toast("Absensi tersimpan");
 }
 
@@ -1538,7 +1560,7 @@ function exportAttendance() {
   const rows = state.attendanceRecords.map((record) => {
     const session = state.attendanceSessions.find((item) => item.id === record.sessionId);
     const student = state.students.find((item) => item.id === record.studentId);
-    return { tanggal: session?.date, kelas: className(session?.classId), siswa: student?.name, status: record.status, catatan: record.notes };
+    return { tanggal: formatDateId(session?.date), kelas: className(session?.classId), siswa: student?.name, status: record.status, catatan: record.notes };
   });
   downloadFile("peru-absensi.csv", toCsv(rows), "text/csv");
 }
@@ -1565,15 +1587,20 @@ function assessmentModal(item = null) {
       <label>Nama penilaian<input class="input" name="title" value="${escapeHtml(item?.title || "")}" required placeholder="Tugas 1 Bilangan Bulat"></label>
       <label>Kelas${classSelect("assessment-class-field", classId)}</label>
       <label>Kategori<select class="select" name="category">${["Tugas", "Ulangan Harian", "Praktik", "Proyek", "PTS", "PAS", "Lainnya"].map((cat) => `<option ${item?.category === cat ? "selected" : ""}>${cat}</option>`).join("")}</select></label>
-      <label>Tanggal<input class="input" type="date" name="date" value="${item?.date || today()}" required></label>
+      <label>Tanggal${dateInput('name="date" required', item?.date || today())}</label>
       <div class="full score-list">
         ${students.length ? students.map((student) => {
           const score = state.assessmentScores.find((s) => s.assessmentId === item?.id && s.studentId === student.id);
-          return `<div class="student-input-row" data-score-student="${student.id}"><div><div class="student-name">${escapeHtml(student.name)}</div><div class="student-sub">${escapeHtml(student.nis || "")}</div></div><input class="input score-value" type="number" min="0" max="100" placeholder="0-100" value="${score?.score ?? ""}"><input class="input score-notes" placeholder="Catatan nilai" value="${escapeHtml(score?.notes || "")}"></div>`;
+          return `<div class="student-input-row" data-score-student="${student.id}"><div><div class="student-name">${escapeHtml(student.name)}</div><div class="student-sub">${escapeHtml(className(student.classId))}</div></div><input class="input score-value" type="number" min="0" max="100" placeholder="0-100" value="${score?.score ?? ""}"><input class="input score-notes" placeholder="Catatan nilai" value="${escapeHtml(score?.notes || "")}"></div>`;
         }).join("") : `<div class="empty">Belum ada siswa di kelas ini.</div>`}
       </div>
     </div>
   `.replace('id="assessment-class-field"', 'id="assessment-class-field" name="classId"'), (data) => {
+    data.date = parseDateId(data.date);
+    if (!data.date) {
+      alert("Tanggal wajib memakai format hh/bb/tttt.");
+      return false;
+    }
     let assessment = item;
     if (assessment) Object.assign(assessment, data);
     else {
@@ -1585,7 +1612,7 @@ function assessmentModal(item = null) {
       const value = row.querySelector(".score-value").value;
       state.assessmentScores.push({ id: uid("score"), assessmentId: assessment.id, studentId: row.dataset.scoreStudent, score: value, notes: row.querySelector(".score-notes").value });
     });
-    logActivity("score", `${data.title} disimpan`, `${data.date} - ${className(data.classId)}`);
+    logActivity("score", `${data.title} disimpan`, `${formatDateId(data.date)} - ${className(data.classId)}`);
   });
 }
 
@@ -1593,7 +1620,7 @@ function exportAssessments() {
   const rows = state.assessmentScores.map((score) => {
     const assessment = state.assessments.find((item) => item.id === score.assessmentId);
     const student = state.students.find((item) => item.id === score.studentId);
-    return { tanggal: assessment?.date, kelas: className(assessment?.classId), penilaian: assessment?.title, kategori: assessment?.category, siswa: student?.name, nilai: score.score, catatan: score.notes };
+    return { tanggal: formatDateId(assessment?.date), kelas: className(assessment?.classId), penilaian: assessment?.title, kategori: assessment?.category, siswa: student?.name, nilai: score.score, catatan: score.notes };
   });
   downloadFile("peru-nilai.csv", toCsv(rows), "text/csv");
 }
@@ -1615,7 +1642,7 @@ function bindJournals() {
 function journalModal(item = null) {
   openModal(item ? "Edit jurnal" : "Tulis jurnal", `
     <div class="form-grid">
-      <label>Tanggal<input class="input" type="date" name="date" value="${item?.date || today()}" required></label>
+      <label>Tanggal${dateInput('name="date" required', item?.date || today())}</label>
       <label>Kelas${classSelect("journal-class-field", item?.classId || state.classes[0]?.id || "")}</label>
       <label>Mata pelajaran<input class="input" name="subject" value="${escapeHtml(item?.subject || classSubject(item?.classId || state.classes[0]?.id))}"></label>
       <label>Jam pelajaran<input class="input" name="lessonHours" value="${escapeHtml(item?.lessonHours || "")}" placeholder="Jam ke-1 sampai 2"></label>
@@ -1627,14 +1654,19 @@ function journalModal(item = null) {
       <label class="full">Catatan tambahan<textarea class="textarea" name="notes">${escapeHtml(item?.notes || "")}</textarea></label>
     </div>
   `.replace('id="journal-class-field"', 'id="journal-class-field" name="classId"'), (data) => {
+    data.date = parseDateId(data.date);
+    if (!data.date) {
+      alert("Tanggal wajib memakai format hh/bb/tttt.");
+      return false;
+    }
     if (item) Object.assign(item, data);
     else state.journals.push({ id: uid("journal"), ...data, createdAt: new Date().toISOString() });
-    logActivity("journal", `${data.material} disimpan`, `${data.date} - ${className(data.classId)}`);
+    logActivity("journal", `${data.material} disimpan`, `${formatDateId(data.date)} - ${className(data.classId)}`);
   });
 }
 
 function exportJournals() {
-  downloadFile("peru-jurnal.csv", toCsv(state.journals.map((j) => ({ tanggal: j.date, kelas: className(j.classId), mapel: j.subject, jam: j.lessonHours, materi: j.material, kegiatan: j.activities, kendala: j.obstacles, tindak_lanjut: j.followUp, catatan: j.notes }))), "text/csv");
+  downloadFile("peru-jurnal.csv", toCsv(state.journals.map((j) => ({ tanggal: formatDateId(j.date), kelas: className(j.classId), mapel: j.subject, jam: j.lessonHours, materi: j.material, kegiatan: j.activities, kendala: j.obstacles, tindak_lanjut: j.followUp, catatan: j.notes }))), "text/csv");
 }
 
 function bindRecaps() {

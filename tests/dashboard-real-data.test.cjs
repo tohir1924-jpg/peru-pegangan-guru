@@ -53,9 +53,9 @@ const baseState = {
     { id: "class-a", name: "V A", academicYear: "2025/2026", subject: "Matematika", description: "" }
   ],
   students: [
-    { id: "stu-1", classId: "class-a", name: "Ahmad Data", nis: "1", gender: "L", parentPhone: "", notes: "" },
-    { id: "stu-2", classId: "class-a", name: "Budi Nilai", nis: "2", gender: "L", parentPhone: "", notes: "" },
-    { id: "stu-3", classId: "class-a", name: "Citra Catatan", nis: "3", gender: "P", parentPhone: "", notes: "Sering tidak membawa tugas" }
+    { id: "stu-1", classId: "class-a", name: "Ahmad Data", gender: "L", parentPhone: "", notes: "" },
+    { id: "stu-2", classId: "class-a", name: "Budi Nilai", gender: "L", parentPhone: "", notes: "" },
+    { id: "stu-3", classId: "class-a", name: "Citra Catatan", gender: "P", parentPhone: "", notes: "Sering tidak membawa tugas" }
   ],
   attendanceSessions: [{ id: "att-1", classId: "class-a", date: "2026-05-26", notes: "" }],
   attendanceRecords: [
@@ -103,7 +103,11 @@ assert(html.includes("Citra Catatan"), "dashboard should flag students with note
 assert(!html.includes("Raka Aditya"), "dashboard should not render fake attention examples");
 
 assert(html.includes("Absensi V A disimpan"), "dashboard should render real activity logs");
+assert(html.includes("26/05/2026"), "dashboard should render stored dates in Indonesian numeric format");
 assert(!html.includes("2 jam lalu"), "dashboard should not render hardcoded relative times");
+
+const studentsHtml = sandbox.renderStudents();
+assert(!studentsHtml.includes("NIS"), "student data should not show an NIS/NISN column or label");
 
 sandbox.render();
 assert(appNode.innerHTML.includes('<span class="notif-badge">2</span>'), "notification badge should reflect pending attendance and journal reminders");

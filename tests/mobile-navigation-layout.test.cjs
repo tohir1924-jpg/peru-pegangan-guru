@@ -36,6 +36,8 @@ assert(appNode.innerHTML.includes('data-route="recaps"'), "mobile drawer should 
 assert(appNode.innerHTML.includes('data-route="settings"'), "mobile drawer should expose the settings page");
 
 assert(cssSource.includes(".mobile-drawer-backdrop.open"), "CSS should provide an opened mobile drawer state");
+assert(!cssSource.includes("grid-template-columns: minmax(0, 1fr) !important"), "mobile quick actions should not collapse to one column");
+assert(!cssSource.includes("grid-template-columns: repeat(2, minmax(0, 1fr)) !important"), "mobile quick actions should not collapse to two columns");
 assert(!cssSource.includes(".route-dashboard .dashboard-grid > .card:nth-child(2) .list {\n    grid-template-columns: repeat(3"), "mobile attention list should not use a horizontal three-column scroller");
 assert(cssSource.includes(".route-dashboard .dashboard-grid > .card .list"), "mobile dashboard card lists should have a single-column mobile rule");
 assert(!appSource.includes("mobile-secondary-nav"), "page headers should not render secondary Rekap/Pengaturan buttons");
