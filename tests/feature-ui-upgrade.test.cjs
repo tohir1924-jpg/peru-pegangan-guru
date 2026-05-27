@@ -5,6 +5,7 @@ const vm = require("vm");
 
 const appSource = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
 const cssSource = fs.readFileSync(path.join(__dirname, "..", "styles.css"), "utf8");
+const body = { lastChild: null, appendChild: (node) => { body.lastChild = node; } };
 
 const sandbox = {
   console,
@@ -26,7 +27,7 @@ const sandbox = {
       querySelector: () => ({ addEventListener: () => {} }),
       querySelectorAll: () => []
     }),
-    body: { appendChild: () => {} }
+    body
   },
   setTimeout: () => {},
   fetch: async () => ({ ok: true, json: async () => ({}) })
@@ -45,10 +46,11 @@ assert(studentModalSource.includes("student-photo-data"), "student form should s
 assert(appSource.includes("compressImage"), "app should include image compression before storing photos");
 assert(appSource.includes("maxSize = 420"), "image compression should cap dimensions for small stored photos");
 
-const settingsHtml = sandbox.renderSettings();
-assert(settingsHtml.includes('accept="image/*"'), "settings should support profile image upload");
-assert(settingsHtml.includes('capture="environment"'), "settings should support camera capture");
-assert(settingsHtml.includes("settings-photo-data"), "settings should store compressed profile photo data");
+sandbox.profileModal();
+const profileModalHtml = sandbox.document.body.lastChild.innerHTML;
+assert(profileModalHtml.includes('accept="image/*"'), "settings should support profile image upload");
+assert(profileModalHtml.includes('capture="environment"'), "settings should support camera capture");
+assert(profileModalHtml.includes("settings-photo-data"), "settings should store compressed profile photo data");
 
 const recapHtml = sandbox.renderRecaps();
 assert(recapHtml.includes("recap-visual-grid"), "recap should render a visual statistics section");

@@ -6,10 +6,11 @@ const vm = require("vm");
 const appSource = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
 const cssSource = fs.readFileSync(path.join(__dirname, "..", "styles.css"), "utf8");
 const appNode = { innerHTML: "" };
+const authSession = JSON.stringify({ token: "test-token", teacher: { id: "teacher-test", teacherName: "Bu Test", schoolName: "SD Test" } });
 const sandbox = {
   console,
   structuredClone,
-  localStorage: { getItem: () => null, setItem: () => {} },
+  localStorage: { getItem: (key) => key === "pegu_teacher_session_v1" ? authSession : null, setItem: () => {} },
   sessionStorage: { getItem: () => "", setItem: () => {} },
   location: { hash: "" },
   window: { addEventListener: () => {}, clearTimeout: () => {}, setTimeout: () => {} },

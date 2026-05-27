@@ -346,7 +346,7 @@ function renderLogin(message = "") {
       </section>
     </main>
   `;
-  document.querySelector("#auth-form").addEventListener("submit", submitAuth);
+  document.querySelector("#auth-form")?.addEventListener("submit", submitAuth);
 }
 
 async function submitAuth(event) {

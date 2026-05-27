@@ -7,11 +7,12 @@ function loadApp(initialState) {
   const source = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
   const appNode = { innerHTML: "" };
   const body = { lastChild: null, appendChild: (node) => { body.lastChild = node; } };
+  const authSession = JSON.stringify({ token: "test-token", teacher: { id: "teacher-test", teacherName: "Bu Sari", schoolName: "SD Contoh" } });
   const sandbox = {
     console,
     structuredClone,
     localStorage: {
-      getItem: () => JSON.stringify(initialState),
+      getItem: (key) => key === "pegu_teacher_session_v1" ? authSession : JSON.stringify(initialState),
       setItem: () => {}
     },
     sessionStorage: { getItem: () => "", setItem: () => {} },
@@ -67,8 +68,8 @@ const baseState = {
   ],
   journals: [],
   schedules: [
-    { id: "sch-1", day: "Selasa", startTime: "07.00", endTime: "08.10", classId: "class-a", subject: "IPA Data", room: "Ruang 5", status: "Berlangsung" },
-    { id: "sch-2", day: "Rabu", startTime: "09.00", endTime: "10.00", classId: "class-a", subject: "Besok", room: "Ruang 7", status: "Besok" }
+    { id: "sch-1", day: "Rabu", startTime: "07.00", endTime: "08.10", classId: "class-a", subject: "IPA Data", room: "Ruang 5", status: "Berlangsung" },
+    { id: "sch-2", day: "Selasa", startTime: "09.00", endTime: "10.00", classId: "class-a", subject: "Besok", room: "Ruang 7", status: "Besok" }
   ],
   activityLogs: [
     { id: "log-1", type: "check", title: "Absensi V A disimpan", desc: "2026-05-26", createdAt: "2026-05-26T07:15:00.000Z" }
@@ -84,7 +85,7 @@ assert(!html.includes("Besok"), "dashboard should not render schedules from anot
 assert(html.includes('data-route="schedules"'), "schedule actions should route to schedule management");
 assert(!sandbox.renderSchedules().includes('type="date"'), "schedule management should not require daily date input");
 assert(sandbox.renderSchedules().includes("Berlaku sepanjang semester"), "schedule management should explain weekly schedule scope");
-sandbox.scheduleModal({ day: "Selasa", startTime: "07.00", endTime: "08.10", classId: "class-a", subject: "IPA Data", room: "Ruang 5" });
+sandbox.scheduleModal({ day: "Rabu", startTime: "07.00", endTime: "08.10", classId: "class-a", subject: "IPA Data", room: "Ruang 5" });
 const scheduleModalHtml = sandbox.document.body.lastChild.innerHTML;
 assert(scheduleModalHtml.includes("Mulai (WIB)"), "schedule form should label start time as WIB");
 assert(scheduleModalHtml.includes("Selesai (WIB)"), "schedule form should label end time as WIB");
@@ -105,7 +106,7 @@ assert(html.includes("Absensi V A disimpan"), "dashboard should render real acti
 assert(!html.includes("2 jam lalu"), "dashboard should not render hardcoded relative times");
 
 sandbox.render();
-assert(appNode.innerHTML.includes('<span class="notif-badge">3</span>'), "notification badge should reflect three real attention items");
+assert(appNode.innerHTML.includes('<span class="notif-badge">2</span>'), "notification badge should reflect pending attendance and journal reminders");
 
 const emptyState = {
   ...baseState,
