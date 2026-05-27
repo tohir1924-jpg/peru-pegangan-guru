@@ -195,8 +195,9 @@ h3 {
 
 .brand-subtitle {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: clamp(0.68rem, 1.5vw, 0.78rem);
   margin-top: 2px;
+  white-space: nowrap;
 }
 
 .nav-list {
@@ -382,6 +383,30 @@ h3 {
 .profile-menu button:hover {
   background: #f3f6f4;
   color: var(--primary-strong);
+}
+
+.reminder-menu {
+  min-width: 290px;
+}
+
+.reminder-menu button {
+  align-items: flex-start;
+}
+
+.reminder-menu button span {
+  display: grid;
+  gap: 2px;
+}
+
+.reminder-menu button small,
+.reminder-empty {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.reminder-empty {
+  padding: 10px;
 }
 
 .mobile-app-header {
@@ -711,7 +736,7 @@ h3 {
 
 .quick-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 }
 
@@ -1452,8 +1477,7 @@ tr:last-child td {
 }
 
 @media (max-width: 1180px) {
-  .stats-grid,
-  .quick-grid {
+  .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1533,6 +1557,11 @@ tr:last-child td {
     display: block;
     color: var(--muted);
     margin-top: 4px;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.78rem;
   }
 
   .mobile-header-actions {
@@ -1640,8 +1669,7 @@ tr:last-child td {
     min-height: 74px;
   }
 
-  .stats-grid,
-  .quick-grid {
+  .stats-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
   }
@@ -1770,7 +1798,6 @@ tr:last-child td {
     bottom: 0;
     z-index: 20;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
     padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
     background: #ffffff;
@@ -1809,8 +1836,7 @@ tr:last-child td {
     font-size: 1.45rem;
   }
 
-  .route-dashboard .stats-grid,
-  .route-dashboard .quick-grid {
+  .route-dashboard .stats-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 

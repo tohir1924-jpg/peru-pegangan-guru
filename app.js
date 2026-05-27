@@ -329,7 +329,7 @@ function renderLogin(message = "") {
           <span class="brand-mark"><img src="assets/logo.png" alt="Logo Pegu"></span>
           <div>
             <h1>Pegu</h1>
-            <p>Pagangan Guru</p>
+            <p>Pegangan Guru</p>
           </div>
         </div>
         <form id="auth-form" class="auth-form">
@@ -397,7 +397,7 @@ function render() {
           <div class="brand-mark"><img src="assets/logo.png" alt="Logo Pegu"></div>
           <div>
             <div class="brand-title">Pegu</div>
-            <div class="brand-subtitle">Pagangan Guru</div>
+            <div class="brand-subtitle">Pegangan Guru</div>
           </div>
         </div>
         <div class="nav-list">${visibleNavItems.map(([id, icon, label]) => navButton(id, icon, label, active)).join("")}${navButton("logout", "logout", "Keluar", active)}</div>
@@ -411,10 +411,13 @@ function render() {
           <button class="icon-button mobile-menu-toggle" type="button" aria-label="Buka menu">${iconSvg("menu")}</button>
           <div class="mobile-brand">
             <div class="mobile-brand-mark"><img src="assets/logo.png" alt="Logo Pegu"></div>
-            <div><strong>Pegu</strong><span>Pagangan Guru</span></div>
+            <div><strong>Pegu</strong><span>Pegangan Guru</span></div>
           </div>
           <div class="mobile-header-actions">
-            <button class="icon-button" type="button">${iconSvg("bell")}${attentionCount ? `<span class="notif-badge">${attentionCount}</span>` : ""}</button>
+            <div class="profile-menu-wrap">
+              <button class="icon-button" type="button" data-reminder-toggle aria-label="Peringatan">${iconSvg("bell")}${getReminderItems().length ? `<span class="notif-badge">${getReminderItems().length}</span>` : ""}</button>
+              ${reminderDropdown()}
+            </div>
             <div class="profile-menu-wrap">
               <button class="teacher-avatar" type="button" data-profile-toggle aria-label="Menu profil">${avatarContent()}</button>
               ${profileDropdown()}
@@ -426,13 +429,13 @@ function render() {
       <div class="mobile-drawer-backdrop" data-mobile-drawer>
         <div class="mobile-drawer">
           <div class="mobile-drawer-head">
-            <div><strong>Menu Pegu</strong><span>Pagangan Guru</span></div>
+            <div><strong>Menu Pegu</strong><span>Pegangan Guru</span></div>
             <button class="icon-button" type="button" data-close-mobile-menu aria-label="Tutup menu">${iconSvg("close")}</button>
           </div>
           <div class="nav-list">${visibleNavItems.map(([id, icon, label]) => navButton(id, icon, label, active)).join("")}${navButton("logout", "logout", "Keluar", active)}</div>
         </div>
       </div>
-      <nav class="mobile-bar">${mobileItems.map(([id, icon, label]) => navButton(id, icon, label, active)).join("")}</nav>
+      <nav class="mobile-bar" style="grid-template-columns: repeat(${Math.max(1, mobileItems.length)}, minmax(0, 1fr));">${mobileItems.map(([id, icon, label]) => navButton(id, icon, label, active)).join("")}</nav>
     </div>
   `;
 
@@ -467,12 +470,37 @@ function profileDropdown() {
   `;
 }
 
+function reminderDropdown() {
+  const items = getReminderItems();
+  return `
+    <div class="profile-menu reminder-menu" data-reminder-menu>
+      ${items.length ? items.map((item) => `
+        <button type="button" data-route="${item.route}" data-reminder-action>
+          ${iconSvg(item.icon)}
+          <span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.desc)}</small></span>
+        </button>
+      `).join("") : `<div class="reminder-empty">Tidak ada pengingat hari ini.</div>`}
+    </div>
+  `;
+}
+
 function bindProfileMenu() {
   document.querySelectorAll("[data-profile-toggle]").forEach((button) => {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       const menu = button.closest(".profile-menu-wrap")?.querySelector("[data-profile-menu]");
       document.querySelectorAll("[data-profile-menu].open").forEach((item) => {
+        if (item !== menu) item.classList.remove("open");
+      });
+      menu?.classList.toggle("open");
+      if (menu?.classList.contains("open")) window.setTimeout(() => document.addEventListener("click", closeProfileMenus, { once: true }), 0);
+    });
+  });
+  document.querySelectorAll("[data-reminder-toggle]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const menu = button.closest(".profile-menu-wrap")?.querySelector("[data-reminder-menu]");
+      document.querySelectorAll("[data-profile-menu].open, [data-reminder-menu].open").forEach((item) => {
         if (item !== menu) item.classList.remove("open");
       });
       menu?.classList.toggle("open");
@@ -490,7 +518,7 @@ function bindProfileMenu() {
 }
 
 function closeProfileMenus() {
-  document.querySelectorAll("[data-profile-menu].open").forEach((item) => item.classList.remove("open"));
+  document.querySelectorAll("[data-profile-menu].open, [data-reminder-menu].open").forEach((item) => item.classList.remove("open"));
 }
 
 function navButton(id, icon, label, active) {
@@ -611,6 +639,37 @@ function getTodaySchedules() {
     .sort((a, b) => `${a.startTime || ""}${a.endTime || ""}`.localeCompare(`${b.startTime || ""}${b.endTime || ""}`));
 }
 
+function getDefaultAttendanceClass() {
+  return getTodaySchedules()[0]?.classId || state.classes[0]?.id || "";
+}
+
+function getReminderItems() {
+  const date = today();
+  const schedules = getTodaySchedules();
+  const reminders = [];
+  schedules.forEach((schedule) => {
+    const hasAttendance = state.attendanceSessions.some((session) => session.classId === schedule.classId && session.date === date);
+    if (!hasAttendance) {
+      reminders.push({
+        icon: "check",
+        route: "attendance",
+        title: `Absensi ${className(schedule.classId)}`,
+        desc: `Belum diisi untuk jadwal ${schedule.startTime || "-"}`
+      });
+    }
+    const hasJournal = state.journals.some((journal) => journal.classId === schedule.classId && journal.date === date);
+    if (!hasJournal) {
+      reminders.push({
+        icon: "journal",
+        route: "journals",
+        title: `Jurnal ${className(schedule.classId)}`,
+        desc: `Belum ditulis untuk hari ini`
+      });
+    }
+  });
+  return reminders.slice(0, 8);
+}
+
 function getRecentActivities(limit = 5) {
   return state.activityLogs
     .slice()
@@ -639,7 +698,7 @@ function renderDashboard() {
     ${pageHeader("Beranda", `Selamat datang, ${escapeHtml(state.settings.teacherName)}`, "Semangat mengajar hari ini. Semua aktivitas utama ada di sini.", "")}
     <section class="hero-panel">
       <div>
-        <span class="soft-label">Pegu Pagangan Guru</span>
+        <span class="soft-label">Pegu Pegangan Guru</span>
         <h2>Ruang kerja harian untuk absensi, nilai, dan jurnal.</h2>
         <p>Pilih aksi yang dibutuhkan, lanjutkan pekerjaan kelas, lalu simpan data secara lokal di browser.</p>
       </div>
@@ -862,7 +921,8 @@ function studentTable(students) {
 }
 
 function renderAttendance() {
-  const selectedClass = sessionStorage.getItem("peru_attendance_class") || state.classes[0]?.id || "";
+  const scheduleDefault = getTodaySchedules()[0];
+  const selectedClass = sessionStorage.getItem("peru_attendance_class") || scheduleDefault?.classId || state.classes[0]?.id || "";
   const selectedDate = sessionStorage.getItem("peru_attendance_date") || today();
   const students = studentsInClass(selectedClass);
   const existingSession = state.attendanceSessions.find((session) => session.classId === selectedClass && session.date === selectedDate);
@@ -875,6 +935,7 @@ function renderAttendance() {
         <input class="input" type="date" id="attendance-date" value="${selectedDate}">
         <button class="btn outline" id="mark-all-present">Set semua Hadir</button>
       </div>
+      <div class="form-hint">${scheduleDefault ? `Otomatis mengikuti jadwal hari ini: ${escapeHtml(className(scheduleDefault.classId))} ${escapeHtml(scheduleDefault.startTime || "")}. Kelas dan tanggal tetap bisa diganti manual.` : "Belum ada jadwal hari ini. Pilih kelas dan tanggal secara manual."}</div>
       ${students.length ? `
         <div class="attendance-list">
           ${students.map((student) => {
@@ -1062,10 +1123,12 @@ function renderSchedules() {
 
 function renderRecaps() {
   const selectedClass = sessionStorage.getItem("peru_recap_class") || "";
+  const selectedStudent = sessionStorage.getItem("peru_recap_student") || "";
   const type = sessionStorage.getItem("peru_recap_type") || "attendance-class";
+  const effectiveClass = (type === "attendance-student" || type === "score-student") && !selectedClass ? state.classes[0]?.id || "" : selectedClass;
   return `
-    ${pageHeader("Rekap", "Rekap sederhana", "Lihat ringkasan absensi, nilai, dan jurnal berdasarkan kelas.", `<button class="btn secondary" id="export-recap">${iconSvg("download")} Export Rekap</button>`)}
-    ${recapVisualStats(type, selectedClass)}
+    ${pageHeader("Rekap", "Rekap sederhana", "Lihat ringkasan absensi, nilai, dan jurnal berdasarkan kelas.", "")}
+    ${recapVisualStats(type, effectiveClass)}
     <div class="card card-pad">
       <div class="tabs">
         ${[
@@ -1076,9 +1139,24 @@ function renderRecaps() {
           ["journal", "Jurnal"]
         ].map(([id, label]) => `<button class="tab ${type === id ? "active" : ""}" data-recap-type="${id}">${label}</button>`).join("")}
       </div>
-      <div class="toolbar">${classSelect("recap-class-filter", selectedClass, "Semua kelas")}</div>
-      ${recapTable(type, selectedClass)}
+      <div class="toolbar">${recapFilters(type, effectiveClass, selectedStudent)}</div>
+      <div class="toolbar export-toolbar"><button class="btn secondary" id="export-recap">${iconSvg("download")} Export Rekap</button></div>
+      ${recapTable(type, effectiveClass, selectedStudent)}
     </div>
+  `;
+}
+
+function recapFilters(type, selectedClass, selectedStudent) {
+  const needsStudent = type === "attendance-student" || type === "score-student";
+  const classValue = needsStudent && !selectedClass ? state.classes[0]?.id || "" : selectedClass;
+  const students = studentsInClass(classValue);
+  return `
+    ${classSelect("recap-class-filter", classValue, needsStudent ? null : "Semua kelas")}
+    ${needsStudent ? `
+      <select class="select" id="recap-student-filter">
+        ${students.map((student) => `<option value="${student.id}" ${selectedStudent === student.id ? "selected" : ""}>${escapeHtml(student.name)}</option>`).join("")}
+      </select>
+    ` : ""}
   `;
 }
 
@@ -1120,20 +1198,24 @@ function recapVisualStats(type, classId) {
   `;
 }
 
-function recapTable(type, classId) {
+function recapTable(type, classId, studentId = "") {
   if (type === "journal") {
     const rows = state.journals.filter((journal) => !classId || journal.classId === classId);
     return rows.length ? tableFromRows(rows.map((journal) => ({ tanggal: journal.date, kelas: className(journal.classId), materi: journal.material, kegiatan: journal.activities }))) : `<div class="empty">Belum ada jurnal untuk direkap.</div>`;
   }
   if (type.startsWith("score")) {
-    const rows = studentsInClass(classId).map((student) => {
+    const targetStudent = studentId || studentsInClass(classId)[0]?.id || "";
+    const source = type === "score-student" ? state.students.filter((student) => student.id === targetStudent) : studentsInClass(classId);
+    const rows = source.map((student) => {
       const scores = state.assessmentScores.filter((score) => score.studentId === student.id && score.score !== "");
       const avg = scores.length ? Math.round(scores.reduce((sum, score) => sum + Number(score.score), 0) / scores.length) : "-";
       return { siswa: student.name, kelas: className(student.classId), jumlah_nilai: scores.length, rata_rata: avg };
     });
     return rows.length ? tableFromRows(rows) : `<div class="empty">Belum ada data nilai untuk direkap.</div>`;
   }
-  const rows = studentsInClass(classId).map((student) => {
+  const targetStudent = studentId || studentsInClass(classId)[0]?.id || "";
+  const source = type === "attendance-student" ? state.students.filter((student) => student.id === targetStudent) : studentsInClass(classId);
+  const rows = source.map((student) => {
     const records = state.attendanceRecords.filter((record) => record.studentId === student.id);
     const count = (status) => records.filter((record) => record.status === status).length;
     return { siswa: student.name, kelas: className(student.classId), hadir: count("Hadir"), sakit: count("Sakit"), izin: count("Izin"), alpha: count("Alpha"), terlambat: count("Terlambat") };
@@ -1555,13 +1637,16 @@ function exportJournals() {
 }
 
 function bindRecaps() {
-  document.querySelectorAll("[data-recap-type]").forEach((button) => button.addEventListener("click", () => { sessionStorage.setItem("peru_recap_type", button.dataset.recapType); render(); }));
-  document.querySelector("#recap-class-filter")?.addEventListener("change", (e) => { sessionStorage.setItem("peru_recap_class", e.target.value); render(); });
+  document.querySelectorAll("[data-recap-type]").forEach((button) => button.addEventListener("click", () => { sessionStorage.setItem("peru_recap_type", button.dataset.recapType); sessionStorage.removeItem("peru_recap_student"); render(); }));
+  document.querySelector("#recap-class-filter")?.addEventListener("change", (e) => { sessionStorage.setItem("peru_recap_class", e.target.value); sessionStorage.removeItem("peru_recap_student"); render(); });
+  document.querySelector("#recap-student-filter")?.addEventListener("change", (e) => { sessionStorage.setItem("peru_recap_student", e.target.value); render(); });
   document.querySelector("#export-recap")?.addEventListener("click", () => {
     const type = sessionStorage.getItem("peru_recap_type") || "attendance-class";
-    const classId = sessionStorage.getItem("peru_recap_class") || "";
+    const needsStudent = type === "attendance-student" || type === "score-student";
+    const classId = sessionStorage.getItem("peru_recap_class") || (needsStudent ? state.classes[0]?.id || "" : "");
+    const studentId = sessionStorage.getItem("peru_recap_student") || "";
     const temp = document.createElement("div");
-    temp.innerHTML = recapTable(type, classId);
+    temp.innerHTML = recapTable(type, classId, studentId);
     const headers = [...temp.querySelectorAll("th")].map((th) => th.textContent.trim().replaceAll(" ", "_"));
     const rows = [...temp.querySelectorAll("tbody tr")].map((tr) => Object.fromEntries([...tr.children].map((td, i) => [headers[i], td.textContent.trim()])));
     downloadFile(`peru-rekap-${type}.csv`, toCsv(rows), "text/csv");

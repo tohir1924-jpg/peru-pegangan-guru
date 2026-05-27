@@ -119,7 +119,7 @@ async function handleApi(req, res, url) {
     }
 
     if (url.pathname === "/api/health" && req.method === "GET") {
-      sendJson(res, 200, { ok: true, app: "Pegu Pagangan Guru", backend: "local-node" });
+      sendJson(res, 200, { ok: true, app: "Pegu Pegangan Guru", backend: "local-node" });
       return;
     }
 
