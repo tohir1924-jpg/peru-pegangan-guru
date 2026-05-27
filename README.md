@@ -1,4 +1,4 @@
-# Peru - Pegangan Guru
+# Pegu - Pagangan Guru
 
 MVP aplikasi pribadi guru berdasarkan PRD `PRD_MVP_Peru_Pegangan_Guru.md`.
 

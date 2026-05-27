@@ -131,7 +131,7 @@ function syncStateToBackend(immediate = false) {
 
 function setRoute(next) {
   if (next === "logout") {
-    toast("Peru saat ini berjalan lokal. Tidak ada sesi login yang perlu ditutup.");
+    toast("Pegu saat ini berjalan lokal. Tidak ada sesi login yang perlu ditutup.");
     return;
   }
   route = next;
@@ -262,8 +262,8 @@ function render() {
         <div class="brand">
           <div class="brand-mark">P</div>
           <div>
-            <div class="brand-title">PERU</div>
-            <div class="brand-subtitle">Pegangan Guru</div>
+            <div class="brand-title">Pegu</div>
+            <div class="brand-subtitle">Pagangan Guru</div>
           </div>
         </div>
         <div class="nav-list">${navItems.map(([id, icon, label]) => navButton(id, icon, label, active)).join("")}</div>
@@ -277,7 +277,7 @@ function render() {
           <button class="icon-button mobile-menu-toggle" type="button" aria-label="Buka menu">${iconSvg("menu")}</button>
           <div class="mobile-brand">
             <div class="mobile-brand-mark">${iconSvg("class")}</div>
-            <div><strong>Peru</strong><span>Pegangan Guru</span></div>
+            <div><strong>Pegu</strong><span>Pagangan Guru</span></div>
           </div>
           <div class="mobile-header-actions">
             <button class="icon-button" type="button">${iconSvg("bell")}${attentionCount ? `<span class="notif-badge">${attentionCount}</span>` : ""}</button>
@@ -289,7 +289,7 @@ function render() {
       <div class="mobile-drawer-backdrop" data-mobile-drawer>
         <div class="mobile-drawer">
           <div class="mobile-drawer-head">
-            <div><strong>Menu Peru</strong><span>Pegangan Guru</span></div>
+            <div><strong>Menu Pegu</strong><span>Pagangan Guru</span></div>
             <button class="icon-button" type="button" data-close-mobile-menu aria-label="Tutup menu">${iconSvg("close")}</button>
           </div>
           <div class="nav-list">${navItems.map(([id, icon, label]) => navButton(id, icon, label, active)).join("")}</div>
@@ -454,7 +454,7 @@ function renderDashboard() {
     ${pageHeader("Beranda", `Selamat datang, ${escapeHtml(state.settings.teacherName)}`, "Semangat mengajar hari ini. Semua aktivitas utama ada di sini.", "")}
     <section class="hero-panel">
       <div>
-        <span class="soft-label">PERU Pegangan Guru</span>
+        <span class="soft-label">Pegu Pagangan Guru</span>
         <h2>Ruang kerja harian untuk absensi, nilai, dan jurnal.</h2>
         <p>Pilih aksi yang dibutuhkan, lanjutkan pekerjaan kelas, lalu simpan data secara lokal di browser.</p>
       </div>
@@ -611,7 +611,7 @@ function renderClasses() {
               <td><div class="row-actions"><button class="btn small outline" data-edit-class="${item.id}">Edit</button><button class="btn small danger" data-delete-class="${item.id}">Hapus</button></div></td>
             </tr>`).join("")}</tbody>
         </table></div>
-      ` : empty("Belum ada kelas. Tambahkan kelas pertama untuk mulai menggunakan Peru.", "Tambah Kelas", "add-class-empty")}
+      ` : empty("Belum ada kelas. Tambahkan kelas pertama untuk mulai menggunakan Pegu.", "Tambah Kelas", "add-class-empty")}
     </div>
   `;
 }

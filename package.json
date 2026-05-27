@@ -1,4 +1,5 @@
 {
+  "name": "pegu",
   "scripts": {
     "deploy:cloudflare": "wrangler pages deploy dist --project-name pegu"
   },

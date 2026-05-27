@@ -55,7 +55,7 @@ async function handleApi(req, res, url) {
     }
 
     if (url.pathname === "/api/health" && req.method === "GET") {
-      sendJson(res, 200, { ok: true, app: "Peru Pegangan Guru" });
+      sendJson(res, 200, { ok: true, app: "Pegu Pagangan Guru" });
       return;
     }
 
@@ -117,6 +117,6 @@ http
     });
   })
   .listen(port, "127.0.0.1", () => {
-    console.log(`Peru app running at http://127.0.0.1:${port}`);
-    console.log(`Peru API available at http://127.0.0.1:${port}/api/state`);
+    console.log(`Pegu app running at http://127.0.0.1:${port}`);
+    console.log(`Pegu API available at http://127.0.0.1:${port}/api/state`);
   });
