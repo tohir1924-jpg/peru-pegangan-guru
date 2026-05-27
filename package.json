@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "deploy:cloudflare": "wrangler pages deploy dist --project-name pegu"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
