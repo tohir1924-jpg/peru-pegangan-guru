@@ -16,7 +16,15 @@ const navItems = [
   ["logout", "logout", "Keluar"]
 ];
 
-const mobileNavIds = ["dashboard", "classes", "attendance", "assessments", "journals"];
+const defaultMobileNavIds = ["dashboard", "classes", "attendance", "assessments", "journals"];
+const defaultVisibleNavIds = navItems.filter(([id]) => id !== "logout").map(([id]) => id);
+const quickActionItems = [
+  ["attendance", "check", "Isi Absensi", "Mulai dari kelas dan tanggal"],
+  ["assessments", "score", "Input Nilai", "Buat atau lanjutkan penilaian"],
+  ["journals", "journal", "Tulis Jurnal", "Catat kegiatan pembelajaran"],
+  ["students", "students", "Tambah Siswa", "Lengkapi data kelas"]
+];
+const defaultQuickActionIds = quickActionItems.map(([id]) => id);
 const weekDays = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -36,7 +44,9 @@ const seedState = {
     schoolName: "Sekolah Saya",
     mainSubject: "Matematika",
     activeAcademicYear: "2025/2026",
-    activeSemester: "Ganjil"
+    activeSemester: "Ganjil",
+    quickActionIds: defaultQuickActionIds,
+    navIds: defaultVisibleNavIds
   },
   classes: [
     { id: "class-7a", name: "VII A", academicYear: "2025/2026", subject: "Matematika", description: "Kelas contoh", createdAt: "2026-05-25T00:00:00.000Z" },
@@ -90,10 +100,17 @@ function loadState() {
 function hydrateState(value) {
   const base = structuredClone(seedState);
   const source = value && typeof value === "object" ? value : {};
+  const sourceSettings = source.settings || {};
+  const settings = {
+    ...base.settings,
+    ...sourceSettings,
+    quickActionIds: normalizeIds(sourceSettings.quickActionIds, defaultQuickActionIds, quickActionItems.map(([id]) => id)),
+    navIds: normalizeIds(sourceSettings.navIds, defaultVisibleNavIds, navItems.filter(([id]) => id !== "logout").map(([id]) => id))
+  };
   return {
     ...base,
     ...source,
-    settings: { ...base.settings, ...(source.settings || {}) },
+    settings,
     classes: Array.isArray(source.classes) ? source.classes : base.classes,
     students: Array.isArray(source.students) ? source.students : base.students,
     attendanceSessions: Array.isArray(source.attendanceSessions) ? source.attendanceSessions : base.attendanceSessions,
@@ -104,6 +121,12 @@ function hydrateState(value) {
     schedules: Array.isArray(source.schedules) ? source.schedules : base.schedules,
     activityLogs: Array.isArray(source.activityLogs) ? source.activityLogs : base.activityLogs
   };
+}
+
+function normalizeIds(value, fallback, allowed) {
+  if (!Array.isArray(value)) return [...fallback];
+  const filtered = value.filter((id) => allowed.includes(id));
+  return filtered.length ? filtered : [...fallback];
 }
 
 function saveState() {
@@ -303,7 +326,7 @@ function renderLogin(message = "") {
     <main class="auth-shell">
       <section class="auth-panel">
         <div class="auth-brand">
-          <span class="brand-mark">P</span>
+          <span class="brand-mark"><img src="assets/logo.png" alt="Logo Pegu"></span>
           <div>
             <h1>Pegu</h1>
             <p>Pagangan Guru</p>
@@ -364,19 +387,20 @@ function render() {
   }
   const active = navItems.some(([id]) => id === route && id !== "logout") ? route : "dashboard";
   const app = document.getElementById("app");
-  const mobileItems = navItems.filter(([id]) => mobileNavIds.includes(id));
+  const visibleNavItems = getVisibleNavItems();
+  const mobileItems = visibleNavItems.filter(([id]) => defaultMobileNavIds.includes(id));
   const attentionCount = getAttentionItems().length;
   app.innerHTML = `
     <div class="app-shell route-${active}">
       <aside class="sidebar">
         <div class="brand">
-          <div class="brand-mark">P</div>
+          <div class="brand-mark"><img src="assets/logo.png" alt="Logo Pegu"></div>
           <div>
             <div class="brand-title">Pegu</div>
             <div class="brand-subtitle">Pagangan Guru</div>
           </div>
         </div>
-        <div class="nav-list">${navItems.map(([id, icon, label]) => navButton(id, icon, label, active)).join("")}</div>
+        <div class="nav-list">${visibleNavItems.map(([id, icon, label]) => navButton(id, icon, label, active)).join("")}${navButton("logout", "logout", "Keluar", active)}</div>
         <div class="sidebar-note">
           <strong>${escapeHtml(state.settings.activeAcademicYear)}</strong>
           <span>${escapeHtml(state.settings.schoolName || "Sekolah Saya")}</span>
@@ -386,12 +410,15 @@ function render() {
         <div class="mobile-app-header">
           <button class="icon-button mobile-menu-toggle" type="button" aria-label="Buka menu">${iconSvg("menu")}</button>
           <div class="mobile-brand">
-            <div class="mobile-brand-mark">${iconSvg("class")}</div>
+            <div class="mobile-brand-mark"><img src="assets/logo.png" alt="Logo Pegu"></div>
             <div><strong>Pegu</strong><span>Pagangan Guru</span></div>
           </div>
           <div class="mobile-header-actions">
             <button class="icon-button" type="button">${iconSvg("bell")}${attentionCount ? `<span class="notif-badge">${attentionCount}</span>` : ""}</button>
-            <span class="teacher-avatar">${state.settings.photoData ? `<img src="${state.settings.photoData}" alt="Foto profil">` : escapeHtml((state.settings.teacherName || "G").slice(0, 1).toUpperCase())}</span>
+            <div class="profile-menu-wrap">
+              <button class="teacher-avatar" type="button" data-profile-toggle aria-label="Menu profil">${avatarContent()}</button>
+              ${profileDropdown()}
+            </div>
           </div>
         </div>
         ${renderPage(active)}
@@ -402,7 +429,7 @@ function render() {
             <div><strong>Menu Pegu</strong><span>Pagangan Guru</span></div>
             <button class="icon-button" type="button" data-close-mobile-menu aria-label="Tutup menu">${iconSvg("close")}</button>
           </div>
-          <div class="nav-list">${navItems.map(([id, icon, label]) => navButton(id, icon, label, active)).join("")}</div>
+          <div class="nav-list">${visibleNavItems.map(([id, icon, label]) => navButton(id, icon, label, active)).join("")}${navButton("logout", "logout", "Keluar", active)}</div>
         </div>
       </div>
       <nav class="mobile-bar">${mobileItems.map(([id, icon, label]) => navButton(id, icon, label, active)).join("")}</nav>
@@ -418,7 +445,52 @@ function render() {
   mobileDrawer?.addEventListener("click", (event) => {
     if (event.target === mobileDrawer) mobileDrawer.classList.remove("open");
   });
+  bindProfileMenu();
   bindPage(active);
+}
+
+function getVisibleNavItems() {
+  const allowed = new Set(state.settings.navIds || defaultVisibleNavIds);
+  return navItems.filter(([id]) => id !== "logout" && allowed.has(id));
+}
+
+function avatarContent() {
+  return state.settings.photoData ? `<img src="${state.settings.photoData}" alt="Foto profil">` : escapeHtml((state.settings.teacherName || "G").slice(0, 1).toUpperCase());
+}
+
+function profileDropdown() {
+  return `
+    <div class="profile-menu" data-profile-menu>
+      <button type="button" data-edit-profile>${iconSvg("settings")} Edit Profil</button>
+      <button type="button" data-profile-logout>${iconSvg("logout")} Log out</button>
+    </div>
+  `;
+}
+
+function bindProfileMenu() {
+  document.querySelectorAll("[data-profile-toggle]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const menu = button.closest(".profile-menu-wrap")?.querySelector("[data-profile-menu]");
+      document.querySelectorAll("[data-profile-menu].open").forEach((item) => {
+        if (item !== menu) item.classList.remove("open");
+      });
+      menu?.classList.toggle("open");
+      if (menu?.classList.contains("open")) window.setTimeout(() => document.addEventListener("click", closeProfileMenus, { once: true }), 0);
+    });
+  });
+  document.querySelectorAll("[data-edit-profile]").forEach((button) => button.addEventListener("click", () => {
+    button.closest("[data-profile-menu]")?.classList.remove("open");
+    profileModal();
+  }));
+  document.querySelectorAll("[data-profile-logout]").forEach((button) => button.addEventListener("click", () => {
+    button.closest("[data-profile-menu]")?.classList.remove("open");
+    logoutTeacher();
+  }));
+}
+
+function closeProfileMenus() {
+  document.querySelectorAll("[data-profile-menu].open").forEach((item) => item.classList.remove("open"));
 }
 
 function navButton(id, icon, label, active) {
@@ -463,9 +535,12 @@ function pageHeader(eyebrow, title, desc, actions = "") {
       </div>
       <div class="topbar-right">
         <div class="top-actions">${actions}</div>
-        <div class="profile-chip">
-          <span class="profile-avatar">${state.settings.photoData ? `<img src="${state.settings.photoData}" alt="Foto profil">` : escapeHtml((state.settings.teacherName || "G").slice(0, 1).toUpperCase())}</span>
-          <span><strong>${escapeHtml(state.settings.teacherName)}</strong><small>${escapeHtml(state.settings.mainSubject || "Guru")}</small></span>
+        <div class="profile-menu-wrap">
+          <button class="profile-chip" type="button" data-profile-toggle>
+            <span class="profile-avatar">${avatarContent()}</span>
+            <span><strong>${escapeHtml(state.settings.teacherName)}</strong><small>${escapeHtml(state.settings.mainSubject || "Guru")}</small></span>
+          </button>
+          ${profileDropdown()}
         </div>
       </div>
     </div>
@@ -576,10 +651,7 @@ function renderDashboard() {
     <div class="card card-pad section-gap">
       <div class="section-title"><div><span class="soft-label">Aksi Cepat</span><h2>Mulai pekerjaan kelas</h2></div></div>
       <div class="quick-grid">
-        ${quick("check", "Isi Absensi", "Mulai dari kelas dan tanggal", "attendance")}
-        ${quick("score", "Input Nilai", "Buat atau lanjutkan penilaian", "assessments")}
-        ${quick("journal", "Tulis Jurnal", "Catat kegiatan pembelajaran", "journals")}
-        ${quick("students", "Tambah Siswa", "Lengkapi data kelas", "students")}
+        ${getVisibleQuickActions().map(([target, icon, title, desc]) => quick(icon, title, desc, target)).join("") || emptyState("settings", "Aksi cepat belum dipilih", "Atur tombol aksi cepat yang ingin ditampilkan di halaman Pengaturan.")}
       </div>
     </div>
     <div class="grid dashboard-grid">
@@ -611,6 +683,11 @@ function stat(label, value, foot, icon, progress = null) {
 
 function quick(icon, title, desc, target) {
   return `<button class="quick-card" data-route="${target}"><span class="quick-kicker">${iconSvg(icon)}</span><span class="quick-title">${title}</span><span class="list-meta">${desc}</span></button>`;
+}
+
+function getVisibleQuickActions() {
+  const allowed = new Set(state.settings.quickActionIds || defaultQuickActionIds);
+  return quickActionItems.filter(([id]) => allowed.has(id));
 }
 
 function listItem(title, desc, meta, badgeClass = "") {
@@ -1082,28 +1159,30 @@ function tableFromRows(rows) {
 }
 
 function renderSettings() {
+  const selectedQuick = new Set(state.settings.quickActionIds || defaultQuickActionIds);
+  const selectedNav = new Set(state.settings.navIds || defaultVisibleNavIds);
   return `
-    ${pageHeader("Pengaturan", "Profil dan data lokal", "Atur profil guru, backup data, restore data, dan reset lokal.", "")}
+    ${pageHeader("Pengaturan", "Tampilan dan data", "Atur tombol aksi cepat, menu navbar, backup data, restore data, dan reset lokal.", "")}
     <div class="grid two-col">
       <div class="card card-pad">
-        <div class="section-title"><h2>Profil dasar</h2></div>
-        <form id="settings-form" class="form-grid">
-          <div class="photo-field full">
-            <div class="student-photo preview" id="settings-photo-preview">${state.settings.photoData ? `<img src="${state.settings.photoData}" alt="Foto profil">` : photoPlaceholder(state.settings.teacherName || "G")}</div>
-            <div>
-              <label>Foto profil
-                <input class="input" type="file" id="settings-photo-input" accept="image/*" capture="environment">
-              </label>
-              <input type="hidden" name="photoData" id="settings-photo-data" value="${escapeHtml(state.settings.photoData || "")}">
-              <div class="form-hint">Foto otomatis dikompresi sebelum disimpan ke data lokal.</div>
-            </div>
-          </div>
-          <label>Nama guru<input class="input" name="teacherName" value="${escapeHtml(state.settings.teacherName)}" required></label>
-          <label>Nama sekolah<input class="input" name="schoolName" value="${escapeHtml(state.settings.schoolName)}"></label>
-          <label>Mata pelajaran utama<input class="input" name="mainSubject" value="${escapeHtml(state.settings.mainSubject)}"></label>
-          <label>Tahun ajaran aktif<input class="input" name="activeAcademicYear" value="${escapeHtml(state.settings.activeAcademicYear)}" required></label>
-          <label>Semester aktif<select class="select" name="activeSemester"><option ${state.settings.activeSemester === "Ganjil" ? "selected" : ""}>Ganjil</option><option ${state.settings.activeSemester === "Genap" ? "selected" : ""}>Genap</option></select></label>
-          <div class="full"><button class="btn primary" type="submit">Simpan Pengaturan</button></div>
+        <div class="section-title"><h2>Kartu aksi cepat</h2></div>
+        <form id="display-settings-form" class="settings-list">
+          ${quickActionItems.map(([id, icon, title, desc]) => `
+            <label class="setting-toggle">
+              <input type="checkbox" name="quickActionIds" value="${id}" ${selectedQuick.has(id) ? "checked" : ""}>
+              <span class="nav-icon">${iconSvg(icon)}</span>
+              <span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(desc)}</small></span>
+            </label>
+          `).join("")}
+          <div class="section-title settings-subtitle"><h2>Navbar</h2></div>
+          ${navItems.filter(([id]) => id !== "logout").map(([id, icon, label]) => `
+            <label class="setting-toggle">
+              <input type="checkbox" name="navIds" value="${id}" ${selectedNav.has(id) ? "checked" : ""}>
+              <span class="nav-icon">${iconSvg(icon)}</span>
+              <span><strong>${escapeHtml(label)}</strong><small>Tampilkan di menu navigasi</small></span>
+            </label>
+          `).join("")}
+          <div><button class="btn primary" type="submit">Simpan Tampilan</button></div>
         </form>
       </div>
       <div class="card card-pad">
@@ -1118,6 +1197,36 @@ function renderSettings() {
       </div>
     </div>
   `;
+}
+
+function profileModal() {
+  openModal("Edit profil", `
+    <div class="form-grid">
+      <div class="photo-field full">
+        <div class="student-photo preview" id="settings-photo-preview">${state.settings.photoData ? `<img src="${state.settings.photoData}" alt="Foto profil">` : photoPlaceholder(state.settings.teacherName || "G")}</div>
+        <div>
+          <label>Foto profil
+            <input class="input" type="file" id="settings-photo-input" accept="image/*" capture="environment">
+          </label>
+          <input type="hidden" name="photoData" id="settings-photo-data" value="${escapeHtml(state.settings.photoData || "")}">
+          <div class="form-hint">Foto otomatis dikompresi sebelum disimpan.</div>
+        </div>
+      </div>
+      <label>Nama guru<input class="input" name="teacherName" value="${escapeHtml(state.settings.teacherName)}" required></label>
+      <label>Nama sekolah<input class="input" name="schoolName" value="${escapeHtml(state.settings.schoolName)}"></label>
+      <label>Mata pelajaran utama<input class="input" name="mainSubject" value="${escapeHtml(state.settings.mainSubject)}"></label>
+      <label>Tahun ajaran aktif<input class="input" name="activeAcademicYear" value="${escapeHtml(state.settings.activeAcademicYear)}" required></label>
+      <label>Semester aktif<select class="select" name="activeSemester"><option ${state.settings.activeSemester === "Ganjil" ? "selected" : ""}>Ganjil</option><option ${state.settings.activeSemester === "Genap" ? "selected" : ""}>Genap</option></select></label>
+    </div>
+  `, (data) => {
+    state.settings = { ...state.settings, ...data };
+    if (currentTeacher?.teacher) {
+      currentTeacher.teacher.teacherName = data.teacherName;
+      currentTeacher.teacher.schoolName = data.schoolName;
+      localStorage.setItem(AUTH_KEY, JSON.stringify(currentTeacher));
+    }
+  });
+  bindCompressedPhotoInput("#settings-photo-input", "#settings-photo-data", "#settings-photo-preview");
 }
 
 function empty(text, actionText, actionId) {
@@ -1460,10 +1569,14 @@ function bindRecaps() {
 }
 
 function bindSettings() {
-  bindCompressedPhotoInput("#settings-photo-input", "#settings-photo-data", "#settings-photo-preview");
-  document.querySelector("#settings-form")?.addEventListener("submit", (event) => {
+  document.querySelector("#display-settings-form")?.addEventListener("submit", (event) => {
     event.preventDefault();
-    state.settings = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const data = new FormData(event.currentTarget);
+    state.settings = {
+      ...state.settings,
+      quickActionIds: data.getAll("quickActionIds"),
+      navIds: data.getAll("navIds")
+    };
     saveState(); render(); toast("Pengaturan tersimpan");
   });
   document.querySelector("#backup-json")?.addEventListener("click", () => downloadFile(`peru-backup-${today()}.json`, JSON.stringify(state, null, 2), "application/json"));

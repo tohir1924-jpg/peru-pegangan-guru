@@ -174,10 +174,17 @@ h3 {
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: var(--primary);
-  color: #fff;
+  background: #ffffff;
+  color: var(--primary);
   font-weight: 900;
   box-shadow: 0 10px 22px rgba(47, 143, 93, 0.18);
+  overflow: hidden;
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .brand-title {
@@ -311,6 +318,12 @@ h3 {
   align-items: center;
   gap: 9px;
   box-shadow: var(--shadow-soft);
+  color: var(--text);
+  text-align: left;
+}
+
+.profile-menu-wrap {
+  position: relative;
 }
 
 .profile-avatar {
@@ -333,6 +346,42 @@ h3 {
 .profile-chip small {
   color: var(--muted);
   font-size: 0.72rem;
+}
+
+.profile-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 24;
+  min-width: 178px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+  display: none;
+}
+
+.profile-menu.open {
+  display: grid;
+}
+
+.profile-menu button {
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  text-align: left;
+  font-weight: 720;
+}
+
+.profile-menu button:hover {
+  background: #f3f6f4;
+  color: var(--primary-strong);
 }
 
 .mobile-app-header {
@@ -370,12 +419,14 @@ h3 {
   width: 46px;
   height: 46px;
   border-radius: 50%;
+  border: 0;
   display: grid;
   place-items: center;
   background: var(--primary-soft);
   color: var(--primary-strong);
   font-weight: 850;
   overflow: hidden;
+  padding: 0;
 }
 
 .profile-avatar img,
@@ -385,6 +436,44 @@ h3 {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.settings-list {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-subtitle {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.setting-toggle {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: auto 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.setting-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+
+.setting-toggle span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.setting-toggle small {
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 
 .link-action {
@@ -1422,8 +1511,15 @@ tr:last-child td {
     border-radius: 12px;
     display: grid;
     place-items: center;
-    background: var(--primary);
-    color: #fff;
+    background: #ffffff;
+    color: var(--primary);
+    overflow: hidden;
+  }
+
+  .mobile-brand-mark img {
+    width: 100%;
+    height: 100%;
+    display: block;
   }
 
   .mobile-brand strong {

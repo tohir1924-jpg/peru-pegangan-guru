@@ -5,5 +5,6 @@ node_modules/
 .wrangler-functions-check/
 data/pegu-teachers.json
 data/teacher-states/
+logo-pegu.png
 .DS_Store
 Thumbs.db
